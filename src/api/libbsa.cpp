@@ -46,7 +46,7 @@ const unsigned int LIBBSA_VERSION_MAJOR = 2;
 const unsigned int LIBBSA_VERSION_MINOR = 0;
 const unsigned int LIBBSA_VERSION_PATCH = 0;
 
-thread_local std::string extErrorString;
+thread_local char const* extErrorString;
 
 /*------------------------------
    Constants
@@ -121,10 +121,7 @@ LIBBSA unsigned int bsa_get_error_message(const char ** const details) {
     if (details == NULL)
         return c_error(LIBBSA_ERROR_INVALID_ARGS, "Null pointer passed.");
 
-    if (extErrorString.empty())
-        *details = nullptr;
-    else
-        *details = extErrorString.c_str();
+    *details = extErrorString;
 
     return LIBBSA_OK;
 }

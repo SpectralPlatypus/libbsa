@@ -12,12 +12,12 @@ cmake_minimum_required (VERSION 2.8)
 project (libbsa)
 include(ExternalProject)
 
-option(BUILD_SHARED_LIBS "Build a shared library" ON)
+option(BUILD_SHARED_LIBS "Build a shared library" OFF)
 option(PROJECT_STATIC_RUNTIME "Build with static runtime libs (/MT)" ON)
 
 ExternalProject_Add(zlib
                     PREFIX "external"
-                    URL "https://zlib.net/zlib-1.2.11.tar.gz"
+                    URL "http://zlib.net/zlib-1.2.12.tar.gz"
                     INSTALL_COMMAND "")
 ExternalProject_Get_Property(zlib SOURCE_DIR BINARY_DIR)
 set (ZLIB_INCLUDE_DIRS ${SOURCE_DIR} ${BINARY_DIR})
