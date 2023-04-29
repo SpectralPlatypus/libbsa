@@ -15,19 +15,6 @@ include(ExternalProject)
 option(BUILD_SHARED_LIBS "Build a shared library" OFF)
 option(PROJECT_STATIC_RUNTIME "Build with static runtime libs (/MT)" ON)
 
-ExternalProject_Add(zlib
-                    PREFIX "external"
-                    URL "http://zlib.net/zlib-1.2.13.tar.gz"
-                    INSTALL_COMMAND "")
-ExternalProject_Get_Property(zlib SOURCE_DIR BINARY_DIR)
-set (ZLIB_INCLUDE_DIRS ${SOURCE_DIR} ${BINARY_DIR})
-IF (MSVC)
-    set (ZLIB_LIBRARIES optimized "${BINARY_DIR}/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}zlibstatic${CMAKE_STATIC_LIBRARY_SUFFIX}"
-                    debug "${BINARY_DIR}/${CMAKE_CFG_INTDIR}/${CMAKE_STATIC_LIBRARY_PREFIX}zlibstaticd${CMAKE_STATIC_LIBRARY_SUFFIX}")
-ELSE ()
-    set (ZLIB_LIBRARIES "${BINARY_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}z${CMAKE_STATIC_LIBRARY_SUFFIX}")
-ENDIF ()
-
 ExternalProject_Add(GTest
                     PREFIX "external"
                     URL "https://github.com/google/googletest/archive/release-1.7.0.tar.gz"
@@ -47,7 +34,8 @@ set (Boost_USE_STATIC_LIBS ${PROJECT_STATIC_RUNTIME})
 set (Boost_USE_MULTITHREADED ON)
 set (Boost_USE_STATIC_RUNTIME ${PROJECT_STATIC_RUNTIME})
 
-find_package(Boost REQUIRED COMPONENTS iostreams filesystem system locale)
+find_package(Boost REQUIRED COMPONENTS iostreams system locale)
+find_package(ZLIB REQUIRED)
 
 set (PROJECT_SRC "${CMAKE_SOURCE_DIR}/src/api/_bsa_handle_int.cpp"
                  "${CMAKE_SOURCE_DIR}/src/api/genericbsa.cpp"
@@ -81,8 +69,8 @@ source_group("Header Files" FILES ${PROJECT_HEADERS} ${TEST_HEADERS})
 include_directories("${CMAKE_SOURCE_DIR}/src"
                     "${CMAKE_SOURCE_DIR}/include"
                     ${Boost_INCLUDE_DIRS}
-                    ${GTEST_INCLUDE_DIRS}
-                    ${ZLIB_INCLUDE_DIRS})
+                    ${GTEST_INCLUDE_DIRS})
+                    #${ZLIB_INCLUDE_DIRS})
 
 ##############################
 # Platform-Specific Settings
@@ -125,8 +113,7 @@ ENDIF ()
 
 # Build libbsa library.
 add_library           (bsa ${PROJECT_SRC} ${PROJECT_HEADERS})
-add_dependencies      (bsa zlib)
-target_link_libraries (bsa Boost::headers ${ZLIB_LIBRARIES})
+target_link_libraries (bsa PRIVATE Boost::headers ZLIB::ZLIB)
 
 # Build libbsa tester.
 add_executable        (tests ${TEST_SRC} ${TEST_HEADERS})
