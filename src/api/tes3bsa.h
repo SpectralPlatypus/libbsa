@@ -28,7 +28,7 @@
 #include <stdint.h>
 #include <string>
 
-#include <boost/filesystem.hpp>
+#include <filesystem>
 
 /* File format infos:
     <http://www.uesp.net/wiki/Tes3Mod:BSA_File_Format>
@@ -43,13 +43,13 @@ namespace libbsa {
         public:
             static const uint32_t VERSION = 0x100;
 
-            BSA(const boost::filesystem::path& path);
-            void Save(const boost::filesystem::path& path,
+            BSA(const std::filesystem::path& path);
+            void Save(const std::filesystem::path& path,
                       const uint32_t version,
                       const uint32_t compression);
 
             //Check if a given file is a Tes3-type BSA.
-            static bool IsBSA(const boost::filesystem::path& path);
+            static bool IsBSA(const std::filesystem::path& path);
         private:
             std::pair<uint8_t*, size_t> ReadData(std::ifstream& in,
                                                  const BsaAsset& data) const;

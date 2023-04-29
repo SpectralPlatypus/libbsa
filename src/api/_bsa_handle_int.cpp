@@ -25,11 +25,9 @@
 #include "tes3bsa.h"
 #include "tes4bsa.h"
 
-#include <boost/algorithm/string.hpp>
-
 using namespace libbsa;
 
-_bsa_handle_int::_bsa_handle_int(const boost::filesystem::path& path) :
+_bsa_handle_int::_bsa_handle_int(const std::filesystem::path& path) :
     extAssets(NULL),
     extAssetsNum(0) {
     if (tes3::BSA::IsBSA(path))
@@ -80,5 +78,6 @@ void _bsa_handle_int::freeExtAssets() {
 // std::string to null-terminated char string converter.
 char * _bsa_handle_int::ToNewCString(const std::string& str) {
     char * p = new char[str.length() + 1];
-    return strcpy(p, str.c_str());
+    strcpy_s(p, str.length()+1, str.c_str());
+    return p;
 }

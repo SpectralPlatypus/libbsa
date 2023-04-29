@@ -24,20 +24,21 @@
 #include "tes3bsa.h"
 #include "error.h"
 #include "libbsa/libbsa.h"
-#include <boost/filesystem.hpp>
+#include <filesystem>
+#include <fstream>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 using namespace std;
 
 namespace libbsa {
     namespace tes3 {
-        BSA::BSA(const boost::filesystem::path& path)
+        BSA::BSA(const fs::path& path)
             : GenericBsa(path),
             hashOffset(0) {
             //Check if file exists.
             if (fs::exists(path)) {
-                boost::filesystem::ifstream in(path, ios::binary);
+                std::ifstream in(path, ios::binary);
                 in.exceptions(ios::failbit | ios::badbit | ios::eofbit);  //Causes ifstream::failure to be thrown if problem is encountered.
 
                 Header header;
@@ -105,13 +106,13 @@ namespace libbsa {
             }
         }
 
-        void BSA::Save(const boost::filesystem::path& path, const uint32_t version, const uint32_t compression) {
+        void BSA::Save(const fs::path& path, const uint32_t version, const uint32_t compression) {
             //Version and compression have been validated.
 
-            boost::filesystem::ifstream in(filePath, ios::binary);
+            std::ifstream in(filePath, ios::binary);
             in.exceptions(ios::failbit | ios::badbit | ios::eofbit);  //Causes ifstream::failure to be thrown if problem is encountered.
 
-            boost::filesystem::ofstream out(path, ios::binary | ios::trunc);
+            std::ofstream out(path, ios::binary | ios::trunc);
             out.exceptions(ios::failbit | ios::badbit | ios::eofbit);  //Causes ifstream::failure to be thrown if problem is encountered.
 
             //Build file header.
@@ -140,7 +141,7 @@ namespace libbsa {
             assets.sort(path_comp);
             uint32_t fileDataOffset = 0;
             vector<uint32_t> oldOffsets;
-            boost::filesystem::ofstream debug(fs::path("debug.txt"));
+            std::ofstream debug(fs::path("debug.txt"));
             for (list<BsaAsset>::iterator it = assets.begin(), endIt = assets.end(); it != endIt; ++it) {
                 uint32_t offset = it->offset - (hashOffset + sizeof(Header) + header.fileCount * sizeof(uint64_t));
                 if (offset != fileDataOffset)
@@ -303,12 +304,12 @@ namespace libbsa {
         }
 
         //Check if a given file is a Tes3-type BSA.
-        bool BSA::IsBSA(const boost::filesystem::path& path) {
+        bool BSA::IsBSA(const fs::path& path) {
             //Check if file exists.
             if (!fs::exists(path))
                 return false;
 
-            boost::filesystem::ifstream in(path, ios::binary);
+            std::ifstream in(path, ios::binary);
             in.exceptions(ios::failbit | ios::badbit | ios::eofbit);
 
             uint32_t magic;

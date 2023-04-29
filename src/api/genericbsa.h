@@ -29,16 +29,15 @@
 #include <string>
 #include <list>
 #include <regex>
-
-#include <boost/filesystem/fstream.hpp>
+#include <filesystem>
 
 namespace libbsa {
     // Class for generic BSA data manipulation functions.
     struct GenericBsa {
     public:
-        GenericBsa(const boost::filesystem::path& path);
+        GenericBsa(const std::filesystem::path& path);
 
-        virtual void Save(const boost::filesystem::path& path,
+        virtual void Save(const std::filesystem::path& path,
                           const uint32_t version,
                           const uint32_t compression) = 0;
 
@@ -51,11 +50,11 @@ namespace libbsa {
                      size_t * const size) const;
 
         void Extract(const std::string& assetPath,
-                     const boost::filesystem::path& destRootPath,
+                     const std::filesystem::path& destRootPath,
                      const bool overwrite) const;
 
         void Extract(const std::vector<BsaAsset>& assetsToExtract,
-                     const boost::filesystem::path& destRootPath,
+                     const std::filesystem::path& destRootPath,
                      const bool overwrite) const;
 
         uint32_t CalcChecksum(const std::string& assetPath) const;
@@ -65,7 +64,7 @@ namespace libbsa {
         virtual std::pair<uint8_t*, size_t> ReadData(std::ifstream& in,
                                                      const BsaAsset& data) const = 0;
 
-        const boost::filesystem::path filePath;
+        const std::filesystem::path filePath;
         std::list<BsaAsset> assets;
 
         // Only ever need to convert between Windows-1252 and UTF-8.

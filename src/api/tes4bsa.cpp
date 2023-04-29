@@ -26,20 +26,21 @@
 #include "libbsa/libbsa.h"
 #include <vector>
 #include <cstring>
-#include <boost/filesystem.hpp>
+#include <filesystem>
+#include <fstream>
 #include <zlib.h>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 using namespace std;
 
 namespace libbsa {
     namespace tes4 {
-        BSA::BSA(const boost::filesystem::path& path) :
+        BSA::BSA(const fs::path& path) :
             GenericBsa(path),
             archiveFlags(0),
             fileFlags(0) {
-            boost::filesystem::ifstream in(path, ios::binary);
+            std::ifstream in(path, ios::binary);
             in.exceptions(ios::failbit | ios::badbit | ios::eofbit);
 
             Header header;
@@ -53,8 +54,8 @@ namespace libbsa {
             //Folder records are followed by file records in blocks by folder name, followed by file names.
             //File records and file names have the same ordering.
             vector<FolderRecord> folderRecords(header.folderCount);
-            uint8_t * fileRecords;
-            uint8_t * fileNames;    //A list of null-terminated filenames, one after another.
+            vector<uint8_t> fileRecords{};
+            vector<uint8_t> fileNames{};    //A list of null-terminated filenames, one after another.
             uint32_t fileRecordsSize =
                 header.folderCount + //Folder name string length (in 1 byte).
                 header.totalFolderNameLength + //Total length of folder name strings.
@@ -62,11 +63,11 @@ namespace libbsa {
             try {
                 in.read(reinterpret_cast<char*>(&folderRecords[0]), sizeof(FolderRecord) * header.folderCount);
 
-                fileRecords = new uint8_t[fileRecordsSize];
-                in.read(reinterpret_cast<char*>(fileRecords), sizeof(uint8_t) * fileRecordsSize);
+                fileRecords.reserve(fileRecordsSize);
+                in.read(reinterpret_cast<char*>(fileRecords.data()), sizeof(uint8_t) * fileRecordsSize);
 
-                fileNames = new uint8_t[header.totalFileNameLength];
-                in.read(reinterpret_cast<char*>(fileNames), sizeof(uint8_t) * header.totalFileNameLength);
+                fileNames.reserve(header.totalFileNameLength);
+                in.read(reinterpret_cast<char*>(fileNames.data()), sizeof(uint8_t) * header.totalFileNameLength);
             }
             catch (bad_alloc& e) {
                 throw error(LIBBSA_ERROR_NO_MEM, e.what());
@@ -84,12 +85,12 @@ namespace libbsa {
                 folderRecord.offset -= folderRecordOffsetBaseline;
 
                 //Need to get folder name to add before file name in internal data store.
-                string folderName = getFolderName(fileRecords, folderRecord.offset);
+                string folderName = getFolderName(fileRecords.data(), folderRecord.offset);
 
                 //Now loop through file records for this folder record.
                 uint32_t startOfFolderFileRecords = folderRecord.offset + folderName.length() + 2;
                 for (uint32_t i = 0; i < folderRecord.count; i++) {
-                    uint8_t * fileRecordOffset = fileRecords + startOfFolderFileRecords + i * sizeof(FileRecord);
+                    uint8_t * fileRecordOffset = fileRecords.data() + startOfFolderFileRecords + i * sizeof(FileRecord);
                     FileRecord fileRecord = *reinterpret_cast<FileRecord*>(fileRecordOffset);
 
                     BsaAsset fileData;
@@ -100,7 +101,7 @@ namespace libbsa {
                     if (!folderName.empty())
                         fileData.path = folderName + '\\';
 
-                    std::string filename = getFileName(fileNames, fileNameListPos);
+                    std::string filename = getFileName(fileNames.data(), fileNameListPos);
                     fileData.path += filename;
                     fileNameListPos += filename.length() + 1;
 
@@ -112,22 +113,19 @@ namespace libbsa {
             //Record the file and archive flags.
             fileFlags = header.fileFlags;
             archiveFlags = header.archiveFlags;
-
-            delete[] fileRecords;
-            delete[] fileNames;
         }
 
-        void BSA::Save(const boost::filesystem::path& path, const uint32_t version, const uint32_t compression) {
+        void BSA::Save(const fs::path& path, const uint32_t version, const uint32_t compression) {
             if (fs::exists(path))
                 throw error(LIBBSA_ERROR_INVALID_ARGS, path.string() + " already exists");
 
             if (!fs::exists(filePath))
                 throw error(LIBBSA_ERROR_FILESYSTEM_ERROR, filePath.string() + " no longer exists");
 
-            boost::filesystem::ifstream in(filePath, ios::binary);
+            std::ifstream in(filePath, ios::binary);
             in.exceptions(ios::failbit | ios::badbit | ios::eofbit);  //Causes ifstream::failure to be thrown if problem is encountered.
 
-            boost::filesystem::ofstream out(path, ios::binary | ios::trunc);
+            std::ofstream out(path, ios::binary | ios::trunc);
             out.exceptions(ios::failbit | ios::badbit | ios::eofbit);  //Causes ifstream::failure to be thrown if problem is encountered.
 
             ///////////////////////////////
@@ -391,7 +389,7 @@ namespace libbsa {
             const char * folderName = reinterpret_cast<const char*>(fileRecords + folderOffset + 1);
             uint8_t folderNameLength = *(fileRecords + folderOffset) - 1;
 
-            return ToUTF8(string(folderName, folderNameLength));
+            return (string(folderName, folderNameLength));
         }
 
         std::string BSA::getFileName(const uint8_t * fileNames, uint32_t offset) {
@@ -402,7 +400,7 @@ namespace libbsa {
             if (nullTerminatorPos == NULL)
                 throw error(LIBBSA_ERROR_PARSE_FAIL, "String at " + to_string(*(size_t*)filename) + "is not null terminated.");
 
-            return ToUTF8(string(filename, nullTerminatorPos - filename));
+            return (string(filename, nullTerminatorPos - filename));
         }
 
         uint32_t BSA::HashString(const std::string& str) {
@@ -459,12 +457,12 @@ namespace libbsa {
         }
 
         //Check if a given file is a Tes4-type BSA.
-        bool BSA::IsBSA(const boost::filesystem::path& path) {
+        bool BSA::IsBSA(const fs::path& path) {
             //Check if file exists.
             if (!fs::exists(path))
                 return false;
 
-            boost::filesystem::ifstream in(fs::path(path), ios::binary);
+            std::ifstream in(fs::path(path), ios::binary);
             in.exceptions(ios::failbit | ios::badbit | ios::eofbit);
 
             uint32_t magic;

@@ -30,13 +30,14 @@
 
 #include <bitset>
 #include <codecvt>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include <locale>
 #include <regex>
 #include <unordered_set>
 
 using namespace std;
 using namespace libbsa;
+namespace fs = std::filesystem;
 
 /*------------------------------
    Global variables
@@ -136,15 +137,17 @@ LIBBSA unsigned int bsa_open(bsa_handle * const bh, const char * const path) {
         return c_error(LIBBSA_ERROR_INVALID_ARGS, "Null pointer passed.");
 
     //Set the locale to get encoding conversions working correctly.
-    std::locale::global(std::locale(std::locale(), new std::codecvt_utf8_utf16<wchar_t>));
-    boost::filesystem::path::imbue(std::locale());
+    //std::locale::global(std::locale(std::locale(), new std::codecvt_utf8_utf16<wchar_t>));
+    //filesystem::path::imbue(std::locale());
+    std::string_view pathStr{ path };
+    auto p = fs::u8path(pathStr);
 
-    if (!boost::filesystem::exists(path))
+    if (!fs::exists(p))
         return c_error(LIBBSA_ERROR_INVALID_ARGS, "Given path does not exist.");
 
     //Create handle for the appropriate BSA type.
     try {
-        *bh = new _bsa_handle_int(path);
+        *bh = new _bsa_handle_int(p);
     }
     catch (error& e) {
         return c_error(e.code(), e.what());

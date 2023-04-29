@@ -26,12 +26,13 @@ along with libbsa.  If not, see
 
 #include "bsa_asset.h"
 #include "genericbsa.h"
+#include <filesystem>
 #include <string>
 
 //Class for generic BSA data manipulation functions.
 struct _bsa_handle_int {
 public:
-    _bsa_handle_int(const boost::filesystem::path& path);
+    _bsa_handle_int(const std::filesystem::path& path);
     ~_bsa_handle_int();
 
     libbsa::GenericBsa * getBsa() const;

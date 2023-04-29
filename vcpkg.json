@@ -1,0 +1,16 @@
+{
+  "name": "libbsa",
+  "version-string": "1",
+  "description": "A fork of libbsa for ck-cmd",
+  "homepage": "https://github.com/SpectralPlatypus/libbsa",
+  "license": "GPL-3.0",
+  "supports": "windows",
+  "dependencies": [
+    "boost-iostreams",
+    "boost-filesystem",
+    "boost-system",
+    "boost-locale",
+	"boost-crc",
+    "zlib"
+  ]
+}

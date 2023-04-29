@@ -25,17 +25,16 @@
 #include "error.h"
 #include "libbsa/libbsa.h"
 
-#include <boost/algorithm/string.hpp>
-#include <boost/crc.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/locale.hpp>
 
-namespace fs = boost::filesystem;
+#include <zlib.h>
+#include <fstream>
+#include <boost/locale/encoding.hpp>
 
+namespace fs = std::filesystem;
 using namespace std;
 
 namespace libbsa {
-    GenericBsa::GenericBsa(const boost::filesystem::path& path) : filePath(path) {}
+    GenericBsa::GenericBsa(const fs::path& path) : filePath(path) {}
 
     bool GenericBsa::HasAsset(const std::string& assetPath) const {
         std::string normalisedAssetPath = NormaliseAssetPath(assetPath);
@@ -78,7 +77,7 @@ namespace libbsa {
         pair<uint8_t*, size_t> dataPair;
         try {
             //Read file data.
-            boost::filesystem::ifstream in(filePath, ios::binary);
+            std::ifstream in(filePath, ios::binary);
             in.exceptions(ios::failbit | ios::badbit | ios::eofbit);  //Causes ifstream::failure to be thrown if problem is encountered.
 
             dataPair = ReadData(in, data);
@@ -95,12 +94,12 @@ namespace libbsa {
     }
 
     void GenericBsa::Extract(const std::string& assetPath,
-                             const boost::filesystem::path& destRootPath,
+                             const fs::path& destRootPath,
                              const bool overwrite) const {
         fs::path outFilePath = destRootPath / assetPath;
 
         if (!overwrite && fs::exists(outFilePath))
-            throw error(LIBBSA_ERROR_FILESYSTEM_ERROR, "The file \"" + outFilePath.string() + "\" already exists.");
+            throw libbsa::error::error(LIBBSA_ERROR_FILESYSTEM_ERROR, "The file \"" + outFilePath.string() + "\" already exists.");
 
         try {
             //Create parent directories.
@@ -111,7 +110,7 @@ namespace libbsa {
             Extract(assetPath, &data, &dataSize);
 
             //Write new file.
-            boost::filesystem::ofstream out(outFilePath, ios::binary | ios::trunc);
+            std::ofstream out(outFilePath, ios::binary | ios::trunc);
             out.exceptions(ios::failbit | ios::badbit | ios::eofbit);  //Causes ifstream::failure to be thrown if problem is encountered.
 
             out.write((char*)data, dataSize);
@@ -124,7 +123,7 @@ namespace libbsa {
     }
 
     void GenericBsa::Extract(const vector<BsaAsset>& assetsToExtract,
-                             const boost::filesystem::path& destRootPath,
+                             const fs::path& destRootPath,
                              const bool overwrite) const {
         for (const auto& asset : assetsToExtract) {
             Extract(asset.path, destRootPath, overwrite);
@@ -136,18 +135,14 @@ namespace libbsa {
         size_t dataSize;
         Extract(assetPath, &data, &dataSize);
 
-        //Calculate the checksum now.
-        boost::crc_32_type result;
-        result.process_bytes(data, dataSize);
-
-        return result.checksum();
+        return crc32(0L, data, dataSize);
     }
 
     std::string GenericBsa::ToUTF8(const std::string& str) {
         try {
             return boost::locale::conv::to_utf<char>(str, "Windows-1252", boost::locale::conv::stop);
         }
-        catch (boost::locale::conv::conversion_error& e) {
+        catch (boost::locale::conv::conversion_error&) {
             throw error(LIBBSA_ERROR_BAD_STRING, "\"" + str + "\" cannot be encoded in Windows-1252.");
         }
     }
@@ -156,15 +151,15 @@ namespace libbsa {
         try {
             return boost::locale::conv::from_utf<char>(str, "Windows-1252", boost::locale::conv::stop);
         }
-        catch (boost::locale::conv::conversion_error& e) {
+        catch (boost::locale::conv::conversion_error&) {
             throw error(LIBBSA_ERROR_BAD_STRING, "\"" + str + "\" cannot be encoded in Windows-1252.");
         }
     }
 
     std::string GenericBsa::NormaliseAssetPath(const std::string& assetPath) {
-        std::string out(boost::to_lower_copy(assetPath));
-
-        boost::replace_all(out, "/", "\\");
+        std::string out{assetPath};
+        std::transform(assetPath.begin(), assetPath.end(), out.begin(),
+            [](unsigned char c) { return c == '/' ? '\\' : std::tolower(c); });
 
         if (out[0] == '\\')
             out = out.substr(1);

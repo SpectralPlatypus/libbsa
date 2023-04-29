@@ -17,7 +17,7 @@ option(PROJECT_STATIC_RUNTIME "Build with static runtime libs (/MT)" ON)
 
 ExternalProject_Add(zlib
                     PREFIX "external"
-                    URL "http://zlib.net/zlib-1.2.12.tar.gz"
+                    URL "http://zlib.net/zlib-1.2.13.tar.gz"
                     INSTALL_COMMAND "")
 ExternalProject_Get_Property(zlib SOURCE_DIR BINARY_DIR)
 set (ZLIB_INCLUDE_DIRS ${SOURCE_DIR} ${BINARY_DIR})
@@ -114,7 +114,7 @@ IF (MSVC)
             SET("${flag}" "${${flag}} /EHsc ")
         ENDFOREACH()
     ENDIF ()
-
+	add_compile_options("/std:c++17")
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:MSVCRT /NODEFAULTLIB:MSVCRTD")
     set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /NODEFAULTLIB:MSVCRT /NODEFAULTLIB:MSVCRTD")
 ENDIF ()
@@ -126,7 +126,7 @@ ENDIF ()
 # Build libbsa library.
 add_library           (bsa ${PROJECT_SRC} ${PROJECT_HEADERS})
 add_dependencies      (bsa zlib)
-target_link_libraries (bsa ${Boost_LIBRARIES} ${ZLIB_LIBRARIES})
+target_link_libraries (bsa Boost::headers ${ZLIB_LIBRARIES})
 
 # Build libbsa tester.
 add_executable        (tests ${TEST_SRC} ${TEST_HEADERS})
